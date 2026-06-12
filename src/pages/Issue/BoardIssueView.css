@@ -1,0 +1,67 @@
+.jira-rice-farm-board-issue-view {
+}
+
+.jira-rice-farm-board-issue-view-content {
+    background-color: #fffff2;
+    padding-left: 0.7em;
+}
+
+.jira-rice-farm-board-issue-view-caption {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.5em;
+    margin-bottom: 0.5em;
+    cursor: pointer;
+}
+
+.jira-rice-farm-board-issue-view-caption-edit-button {
+    border: #999999 solid 1px;
+    padding: 0 2px;
+    cursor: pointer;
+}
+
+.jira-rice-farm-board-issue-view-section {
+    padding-left: 0.7em;
+}
+
+.jira-rice-farm-board-issue-view-subsection {
+    padding-left: 1.5em;
+}
+
+.jira-rice-farm-board-issue-view-subsection-item {
+}
+
+.jira-rice-farm-board-issue-view-section-button {
+    padding: 0;
+    position: relative;
+    left: 0;
+    top: 3px;
+    width: 14px;
+    height: 14px;
+    border: 0;
+}
+
+.jira-rice-farm-board-issue-view-section-button-label {
+    padding-left: 10px;
+}
+
+.jira-rice-farm-board-issue-view-section-red {
+    background-color: #fff2f2;
+}
+
+.jira-rice-farm-board-issue-view-section-indigo {
+    background-color: #f9f2ff;
+}
+
+.jira-rice-farm-board-issue-view-section-cyan {
+    background-color: #f2ffff;
+}
+
+.jira-rice-farm-board-issue-view-section-emerald {
+    background-color: #f2fff6;
+}
+
+.jira-rice-farm-board-issue-view-section-button.collapsed > svg {
+    transform: rotate(-90deg);
+}
