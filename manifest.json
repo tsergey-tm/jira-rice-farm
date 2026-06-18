@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "jira-rice-farm",
-  "version": "2026.0618.1246",
+  "version": "2026.0618.1249",
   "icons": {
     "16": "public/icon16.png",
     "32": "public/icon32.png",
@@ -32,7 +32,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/main.tsx-BUAUtBtQ.js"
+        "assets/main.tsx-5JDvF3oT.js"
       ],
       "matches": [
         "*://*/*"
@@ -59,7 +59,7 @@
         "*://*/*"
       ],
       "resources": [
-        "assets/main.tsx-BUAUtBtQ.js"
+        "assets/main.tsx-5JDvF3oT.js"
       ],
       "use_dynamic_url": false
     }
