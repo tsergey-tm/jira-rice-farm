@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "jira-rice-farm",
-  "version": "2026.0618.1104",
+  "version": "2026.0618.1128",
   "icons": {
     "16": "public/icon16.png",
     "32": "public/icon32.png",
@@ -43,6 +43,17 @@
     }
   ],
   "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "*.png",
+        "*.jpg",
+        "*.svg"
+      ],
+      "use_dynamic_url": false
+    },
     {
       "matches": [
         "*://*/*"
