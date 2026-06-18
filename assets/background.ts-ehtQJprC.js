@@ -1,0 +1,1 @@
+chrome.runtime.onInstalled.addListener(()=>{console.log(`[Jira RICE farm] Extension installed`)}),chrome.tabs.onUpdated.addListener((e,t,n)=>{t.status===`complete`&&n.url&&(console.log(`[Jira RICE farm] Tabs URL updated`),chrome.tabs.sendMessage(e,{type:`URL_CHANGED`,url:n.url}))}),console.log(`[Jira RICE farm] Background listeners installed`);

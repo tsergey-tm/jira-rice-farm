@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "jira-rice-farm",
+  "version": "0.0.1",
+  "icons": {
+    "16": "public/icon16.png",
+    "32": "public/icon32.png",
+    "48": "public/icon48.png",
+    "128": "public/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "public/icon16.png",
+      "32": "public/icon32.png",
+      "48": "public/icon48.png",
+      "128": "public/icon128.png"
+    },
+    "default_title": "Jira RICE Farm"
+  },
+  "permissions": [
+    "contentSettings",
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "assets/main.tsx-yZvMzS_a.js"
+      ],
+      "matches": [
+        "*://*/*"
+      ],
+      "css": [
+        "assets/main-Bcg3AMKI.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "*://*/*"
+      ],
+      "resources": [
+        "assets/main.tsx-yZvMzS_a.js"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}
