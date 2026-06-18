@@ -274,15 +274,17 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                                     <div className="jira-rice-farm-issue-editor-impact-description">
                                         {category.description}
                                     </div>
-                                    <select
-                                        id={`impact-${category.name}`}
-                                        value={formData.impacts[category.name] || JRFBoardDataImpactCategoryLevelKeys.None}
-                                        onChange={(e) => handleImpactChange(category.name, e.target.value as JRFBoardDataImpactCategoryLevelKeys)}
-                                    >
-                                        {Object.entries(category.names).map(([key, name]) => (
-                                            <option key={key} value={key}>{name}</option>
-                                        ))}
-                                    </select>
+                                     <select
+                                         id={`impact-${category.name}`}
+                                         className={`impact-${(formData.impacts[category.name] || JRFBoardDataImpactCategoryLevelKeys.None).toLowerCase()}`}
+                                         value={formData.impacts[category.name] || JRFBoardDataImpactCategoryLevelKeys.None}
+                                         onChange={(e) => handleImpactChange(category.name, e.target.value as JRFBoardDataImpactCategoryLevelKeys)}
+                                     >
+                                         {Object.entries(category.names).map(([key, name]) => (
+                                             <option key={key} value={key} className={`option-${key.toLowerCase()}`}>{name}</option>
+                                         ))}
+                                     </select>
+
                                     {errors[`impacts.${category.name}`] && (
                                         <span
                                             className="jira-rice-farm-issue-editor-error-message">{errors[`impacts.${category.name}`]}</span>

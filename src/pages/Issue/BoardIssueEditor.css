@@ -199,3 +199,27 @@
     width: 100%;
     max-width: 500px;
 }
+
+.impact-low {
+    background-color: #ccffcc !important;
+}
+
+.impact-medium {
+    background-color: #ffffcc !important;
+}
+
+.impact-high {
+    background-color: #ffcccc !important;
+}
+
+.option-low {
+    background-color: #ccffcc;
+}
+
+.option-medium {
+    background-color: #ffffcc;
+}
+
+.option-high {
+    background-color: #ffcccc;
+}
