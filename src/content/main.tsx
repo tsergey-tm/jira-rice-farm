@@ -3,6 +3,7 @@ import type {TabMessage} from "@/types/Message.ts";
 import './main.css';
 import {modifyBoard, modifySettings} from "@/modifiers";
 import {jiraBoardDataStore} from "@/data/JiraBoardData.ts";
+import {modifyIssuesList} from "@/modifiers/issuesList.ts";
 
 const observer = new MutationObserver(() => {
 
@@ -22,6 +23,8 @@ const runContentModification = () => {
                     return modifyBoard();
                 case Routes.SETTINGS:
                     return modifySettings();
+                case Routes.ISSUES_LIST:
+                    return modifyIssuesList();
                 default:
                     return false;
             }
