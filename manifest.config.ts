@@ -35,4 +35,10 @@ export default defineManifest({
         js: ['src/content/main.tsx'],
         matches: ['*://*/*'],
     }],
+    "web_accessible_resources": [
+        {
+            "resources": ["*.png", "*.jpg", "*.svg"],
+            "matches": ["<all_urls>"]
+        }
+    ],
 })
