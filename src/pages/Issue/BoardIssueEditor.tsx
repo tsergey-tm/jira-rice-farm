@@ -94,7 +94,7 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
         if (boardData?.impactCategories) {
             boardData.impactCategories.forEach(category => {
                 const value = formData.impacts[category.name];
-                if (!value || value === JRFBoardDataImpactCategoryLevelKeys.None) {
+                if (!value) {
                     newErrors[`impacts.${category.name}`] = "Выберите значение для категории";
                 }
             });
