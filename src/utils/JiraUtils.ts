@@ -3,6 +3,7 @@ import {JRF_KEYS_ISSUE, JRF_KEYS_PROJECT} from '@/types/JiraRiceFarmTypes.ts';
 
 export const Routes = {
     BOARD: 'BOARD',
+    ISSUES_LIST: 'ISSUES_LIST',
     SETTINGS: 'SETTINGS',
     SEARCH: 'SEARCH',
     REPORTS: 'REPORTS',
@@ -30,6 +31,7 @@ export const getCurrentRoute = (url: string | undefined) => {
     if (pathname.includes('RapidBoard.jspa')) {
         if (params.get('config')) return Routes.SETTINGS;
         if (params.get('view') === 'reporting') return Routes.REPORTS;
+        if (params.get('view')?.startsWith('planning')) return Routes.ISSUES_LIST;
 
         return Routes.BOARD;
     }
