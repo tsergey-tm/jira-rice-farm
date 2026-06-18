@@ -279,8 +279,6 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                                         value={formData.impacts[category.name] || JRFBoardDataImpactCategoryLevelKeys.None}
                                         onChange={(e) => handleImpactChange(category.name, e.target.value as JRFBoardDataImpactCategoryLevelKeys)}
                                     >
-                                        <option value={JRFBoardDataImpactCategoryLevelKeys.None}>Выберите значение
-                                        </option>
                                         {Object.entries(category.names).map(([key, name]) => (
                                             <option key={key} value={key}>{name}</option>
                                         ))}
