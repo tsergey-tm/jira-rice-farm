@@ -3,8 +3,9 @@ import {getBoardId, getIssueData} from "@/utils/JiraUtils.ts";
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
 import {calcRICEValues} from "@/utils/RICEUtils.ts";
 import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import {observer} from "mobx-react-lite";
 
-export const modifyIssuesList: ModifyProcessor = (): boolean => {
+export const modifyIssuesList: ModifyProcessor = observer((): boolean => {
     const headerSelector = "#ghx-content-group > div.ghx-backlog-group > div.ghx-backlog-container > div.ghx-backlog-header";
     const issuesContainerSelector = "#ghx-content-group > div.ghx-backlog-group > div.ghx-backlog-container > div.ghx-issues";
     const issueSelector = "div.js-issue";
@@ -105,4 +106,4 @@ export const modifyIssuesList: ModifyProcessor = (): boolean => {
     });
 
     return true;
-};
+});
