@@ -1,5 +1,5 @@
 import {observer} from "mobx-react-lite";
-import {jiraBoardDataStore} from "@/data/JiraBoardData.ts";
+import {jiraBoardDataStore} from "@/data/JiraData.ts";
 
 export const BoardInjectedIcon = observer(() => {
 

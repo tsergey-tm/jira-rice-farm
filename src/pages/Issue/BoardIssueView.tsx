@@ -1,10 +1,8 @@
 import './BoardIssueView.css';
 import {BoardIssueEditor} from "@/pages/Issue/BoardIssueEditor.tsx";
-import {type FC, type MouseEvent, useEffect, useState} from "react";
+import {type FC, type MouseEvent, useState} from "react";
 import {getLocalStorageItem, setLocalStorageItem} from "@/utils/LocalStorage.ts";
-import {getIssueData, getBoardId} from "@/utils/JiraUtils.ts";
-import {jiraBoardDataStore} from "@/data/JiraBoardData.ts";
-import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import {jiraBoardDataStore} from "@/data/JiraData.ts";
 import {calcRICEValues} from "@/utils/RICEUtils.ts";
 import {observer} from "mobx-react-lite";
 
@@ -42,34 +40,29 @@ const getBoardIssueViewCollapsedState = (): BoardIssueViewCollapsedState => {
 
 export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => {
 
+    const boardData = jiraBoardDataStore.jrfBoardData;
+
     const [editorOpen, setEditorOpen] = useState(false);
     const [collapsed, _setCollapsed] = useState<BoardIssueViewCollapsedState>(() => getBoardIssueViewCollapsedState());
-    const [issueData, setIssueData] = useState<JRFIssueData | null>(null);
-
-    // Получение данных задачи
-    useEffect(() => {
-        const fetchIssueData = async () => {
-            try {
-                const boardId = getBoardId();
-                if (boardId) {
-                    const data = await getIssueData(issueKey, boardId);
-                    setIssueData(data);
-                }
-            } catch (error) {
-                console.error('Error fetching issue data:', error);
-            }
-        };
-
-        void fetchIssueData();
-    }, [issueKey, editorOpen]);
-
-    const boardData = jiraBoardDataStore.jrfBoardData;
+    const issueData = jiraBoardDataStore.getIssueData(issueKey);
 
     if (!boardData) {
         return <></>;
     }
 
-    const {rValue, iValue, cValue, eValue, riceValue} = calcRICEValues(boardData, issueData);
+    const {
+        riceValue,
+        rValue,
+        iValue,
+        cValue,
+        eValue
+    } = issueData.loaded ? calcRICEValues(boardData, issueData.value!) : {
+        riceValue: null,
+        rValue: null,
+        iValue: null,
+        cValue: null,
+        eValue: null,
+    };
 
     const toggleMainCollapsed = (event: MouseEvent<HTMLButtonElement>) => {
         // Jira can attach delegated listeners to toggle-title; block them to keep React as single source of truth.
@@ -158,18 +151,18 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
                                     </svg>
                                 </button>
                                 <span
-                                    className="jira-rice-farm-board-issue-view-section-button-label">R = {issueData ? (issueData.reach.type === 'sample' ?
+                                    className="jira-rice-farm-board-issue-view-section-button-label">R = {issueData ? (issueData.value!.reach.type === 'sample' ?
                                     rValue.toFixed(0) :
                                     rValue.toFixed(0)) : '0'}</span>
 
                                 {!collapsed.r && issueData && (
                                     <div className="jira-rice-farm-board-issue-view-subsection">
                                         <div className="jira-rice-farm-board-issue-view-subsection-item">
-                                            доход = {issueData.reach.income}
+                                            доход = {issueData.value!.reach.income}
                                         </div>
-                                        {issueData.reach.type === 'sample' &&
+                                        {issueData.value!.reach.type === 'sample' &&
                                             <div className="jira-rice-farm-board-issue-view-subsection-item">
-                                                размер = {issueData.reach.size}
+                                                размер = {issueData.value!.reach.size}
                                             </div>
                                         }
                                     </div>
@@ -196,7 +189,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
 
                                 {!collapsed.i && issueData && (
                                     <div className="jira-rice-farm-board-issue-view-subsection">
-                                        {Object.entries(issueData.impacts).map(([name, value]) => {
+                                        {Object.entries(issueData.value!.impacts).map(([name, value]) => {
                                             const category = jiraBoardDataStore.jrfBoardData?.impactCategories.find(cat => cat.name === name);
                                             return (
                                                 <div key={name}
@@ -231,7 +224,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
                                 {!collapsed.c && issueData && (
                                     <div className="jira-rice-farm-board-issue-view-subsection">
                                         <div className="jira-rice-farm-board-issue-view-subsection-item">
-                                            {jiraBoardDataStore.jrfBoardData?.confidences.find(conf => conf.name === issueData.confidence)?.name || ''}
+                                            {jiraBoardDataStore.jrfBoardData?.confidences.find(conf => conf.name === issueData.value!.confidence)?.name || ''}
                                         </div>
                                     </div>
                                 )}

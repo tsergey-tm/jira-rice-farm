@@ -60,7 +60,7 @@
 ## Интеграция с системой
 
 - Использовать методы `getIssueData` и `setIssueData` из `src/utils/JiraUtils.ts`
-- Получать данные доски через `jiraBoardDataStore` из `src/data/JiraBoardData.ts`
+- Получать данные доски через `jiraBoardDataStore` из `src/data/JiraData.ts`
 
 ## Дизайн
 

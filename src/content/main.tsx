@@ -1,8 +1,8 @@
-import {getBoardData, getBoardId, getCurrentRoute, isJira, Routes} from "@/utils/JiraUtils.ts";
-import type {TabMessage} from "@/types/Message.ts";
+import {getCurrentRoute, isJira, Routes} from "@/utils/JiraUtils.ts";
+import {type TabMessage, TabMessageType} from "@/types/Message.ts";
 import './main.css';
 import {modifyBoard, modifySettings} from "@/modifiers";
-import {jiraBoardDataStore} from "@/data/JiraBoardData.ts";
+import {jiraBoardDataStore} from "@/data/JiraData.ts";
 import {modifyIssuesList} from "@/modifiers/issuesList.ts";
 
 const observer = new MutationObserver(() => {
@@ -15,7 +15,7 @@ const runContentModification = () => {
     if (isJira()) {
         observer.observe(document.body, {childList: true, subtree: true});
 
-        const route: string = getCurrentRoute(undefined);
+        const route: string = getCurrentRoute();
 
         ((routeName) => {
             switch (routeName) {
@@ -33,14 +33,6 @@ const runContentModification = () => {
 }
 
 runContentModification();
-
-const forceReloadBoardInfo = () => {
-    void getBoardData(getBoardId()!).then(data => {
-        if (data) {
-            jiraBoardDataStore.setSharedData(data);
-        }
-    });
-}
 
 const reloadJiraBoardInfo = () => {
 
@@ -61,22 +53,19 @@ const reloadJiraBoardInfo = () => {
         };
     }
 
-    debounce(forceReloadBoardInfo, 1000)();
+    debounce(() => jiraBoardDataStore.forceReloadBoardInfo(), 1000)();
 }
 
 // Register listener fo messages
 chrome.runtime.onMessage.addListener((message: TabMessage) => {
-    if (message.type === 'URL_CHANGED') {
+    if (message.type === TabMessageType.URL_CHANGED) {
         console.log('[Jira RICE farm] Tab URL updated');
         runContentModification();
-    } else if (message.type === 'BOARD_DATA_CHANGED') {
-        console.log('[Jira RICE farm] Board data changed');
-        forceReloadBoardInfo();
     }
 });
 
 // Send message to background script about URL change
-void chrome.runtime.sendMessage({type: 'URL_CHANGED', url: window.location.href});
+void chrome.runtime.sendMessage({type: TabMessageType.URL_CHANGED, url: window.location.href});
 
 console.log('[Jira RICE farm] Tab listeners installed');
 

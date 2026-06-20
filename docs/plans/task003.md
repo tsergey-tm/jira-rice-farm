@@ -55,7 +55,7 @@ jira-rice-farm-board-issue-view-caption.
    события как это сделано в toggleMainCollapsed
 5. Убедиться, что кнопка редактирования находится на уровне 1. RICE
 6. Данные задачи получить из getIssueData в src/utils/JiraUtils.ts
-7. Данные доски получить из jiraBoardDataStore в src/data/JiraBoardData.ts, это уже с useState и не надо их загружать
+7. Данные доски получить из jiraBoardDataStore в src/data/JiraData.ts, это уже с useState и не надо их загружать
 
 ### 5. Требования к коду
 

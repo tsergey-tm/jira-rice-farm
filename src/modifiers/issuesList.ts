@@ -1,8 +1,8 @@
-import type { ModifyProcessor } from "./types.ts";
-import { getBoardId, getIssueData } from "@/utils/JiraUtils.ts";
-import { jiraBoardDataStore } from "@/data/JiraBoardData.ts";
-import { calcRICEValues } from "@/utils/RICEUtils.ts";
-import type { JRFIssueData } from "@/types/JiraRiceFarmTypes.ts";
+import type {ModifyProcessor} from "./types.ts";
+import {getBoardId, getIssueData} from "@/utils/JiraUtils.ts";
+import {jiraBoardDataStore} from "@/data/JiraData.ts";
+import {calcRICEValues} from "@/utils/RICEUtils.ts";
+import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
 
 export const modifyIssuesList: ModifyProcessor = (): boolean => {
     const headerSelector = "#ghx-content-group > div.ghx-backlog-group > div.ghx-backlog-container > div.ghx-backlog-header";
@@ -66,8 +66,8 @@ export const modifyIssuesList: ModifyProcessor = (): boolean => {
                 const tasksWithRICE = issueElements.map(el => {
                     const key = el.getAttribute("data-issue-key");
                     const issueData = key ? issueDataMap.get(key) || null : null;
-                    const { riceValue } = calcRICEValues(boardData, issueData);
-                    return { el, riceValue };
+                    const {riceValue} = calcRICEValues(boardData, issueData);
+                    return {el, riceValue};
                 });
 
                 // Сортируем по убыванию riceValue. NaN/undefined в конец.

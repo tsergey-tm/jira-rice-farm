@@ -25,7 +25,7 @@
       `#ghx-content-group > div.ghx-backlog-group > div.ghx-backlog-container > div.ghx-issues > div.js-issue`.
     * Для каждого элемента извлечь `issueKey` из атрибута `data-issue-key`.
     * Получить `boardId` с помощью функции `getBoardId()` (из `src/utils/JiraUtils.ts`).
-    * Загрузить данные доски (`boardData`) с помощью функции `jiraBoardDataStore()` (из `src/data/JiraBoardData.ts`).
+    * Загрузить данные доски (`boardData`) с помощью функции `jiraBoardDataStore()` (из `src/data/JiraData.ts`).
 
 2. **Загрузка данных задач**:
     * Для каждого найденного `issueKey` вызвать функцию `getIssueData(issueKey, boardId)` (из `src/utils/JiraUtils.ts`).
@@ -48,7 +48,7 @@
 ## Используемые функции
 
 - `getBoardId()` — `src/utils/JiraUtils.ts`
-- `jiraBoardDataStore()` — `src/data/JiraBoardData.ts`
+- `jiraBoardDataStore()` — `src/data/JiraData.ts`
 - `getIssueData(issueKey, boardId)` — `src/utils/JiraUtils.ts`
 - `calcRICEValues(boardData, issueData)` — `src/utils/RICEUtils.ts`
 

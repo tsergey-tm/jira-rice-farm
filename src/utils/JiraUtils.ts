@@ -8,9 +8,14 @@ export const Routes = {
     SEARCH: 'SEARCH',
     REPORTS: 'REPORTS',
     ISSUE: 'ISSUE',
-    ALL: 'ALL',
     NONE: 'NONE',
 };
+
+const usedRoutes: Set<string> = new Set<string>([
+    Routes.BOARD,
+    Routes.ISSUES_LIST,
+    Routes.SETTINGS,
+]);
 
 type JiraPropertyHolder<T> = {
     key: string;
@@ -18,10 +23,10 @@ type JiraPropertyHolder<T> = {
 }
 
 export const isJira = () => {
-    return document.body.id === 'jira';
+    return document.body.id === 'jira' && usedRoutes.has(getCurrentRoute());
 }
 
-export const getCurrentRoute = (url: string | undefined) => {
+export const getCurrentRoute = (url: string | undefined = undefined) => {
     const _url: URL | Location = url ? new URL(url) : window.location;
     const {pathname, search} = _url;
     const params = new URLSearchParams(search);

@@ -16,7 +16,7 @@
 1. **Получение данных задачи**: Используйте `getIssueData(issueKey)` из `src/utils/JiraUtils.ts` внутри хука
    `useEffect`, чтобы получить свойства задачи.
 2. **Доступ к данным доски**: Получите данные доски из `jiraBoardDataStore.jrfBoardData`, расположенного в
-   `src/data/JiraBoardData.ts`.
+   `src/data/JiraData.ts`.
 3. **Расчет RICE**: Как только оба набора данных (`issueData` и `boardData`) будут доступны, используйте
    `calcRICEValues(boardData, issueData)` из `src/utils/RICEUtils.ts`, чтобы получить `riceValue`.
 
