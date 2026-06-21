@@ -1,9 +1,8 @@
 import {getCurrentRoute, isJira, Routes} from "@/utils/JiraUtils.ts";
 import {type TabMessage, TabMessageType} from "@/types/Message.ts";
 import './main.css';
-import {modifyBoard, modifySettings} from "@/modifiers";
+import {modifyBoard, modifyBoardIcon, modifyIssuesList, modifySelectedIssue, modifySettings} from "@/modifiers";
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
-import {modifyIssuesList} from "@/modifiers/issuesList.ts";
 
 const observer = new MutationObserver(() => {
 
@@ -17,18 +16,23 @@ const runContentModification = () => {
 
         const route: string = getCurrentRoute();
 
-        ((routeName) => {
-            switch (routeName) {
-                case Routes.BOARD:
-                    return modifyBoard();
-                case Routes.SETTINGS:
-                    return modifySettings();
-                case Routes.ISSUES_LIST:
-                    return modifyIssuesList();
-                default:
-                    return false;
-            }
-        })(route);
+        switch (route) {
+            case Routes.BOARD:
+                modifyBoardIcon();
+                modifyBoard();
+                modifySelectedIssue();
+                break;
+            case Routes.SETTINGS:
+                modifySettings();
+                break;
+            case Routes.ISSUES_LIST:
+                modifyBoardIcon();
+                modifyIssuesList();
+                modifySelectedIssue();
+                break;
+            default:
+                break;
+        }
     }
 }
 

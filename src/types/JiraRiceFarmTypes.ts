@@ -1,5 +1,4 @@
 export const JRF_KEYS_PROJECT = "com.tsergey.jira.rice.farm.v1";
-export const JRF_KEYS_ISSUE = "com.tsergey.jira.rice.farm";
 
 export enum JRFBoardDataImpactCategoryLevelKeys {
     None = "None",
@@ -21,13 +20,6 @@ export type JRFBoardDataConfidence = {
     value: number;
 }
 
-export type JRFBoardData = {
-    reachDivider: number;
-    impactCategories: Array<JRFBoardDataImpactCategory>;
-    confidences: Array<JRFBoardDataConfidence>;
-    effortDescription: string;
-}
-
 export type JRFIssueDataReach = {
     type: 'sample' | 'money';
     income: number;
@@ -40,3 +32,15 @@ export type JRFIssueData = {
     confidence: string;
     effort: number;
 }
+
+export type JRFOnlyBoardData = {
+    reachDivider: number;
+    impactCategories: Array<JRFBoardDataImpactCategory>;
+    confidences: Array<JRFBoardDataConfidence>;
+    effortDescription: string;
+}
+
+export type JRFBoardData = JRFOnlyBoardData & {
+    issues: { [key: string]: JRFIssueData };
+}
+

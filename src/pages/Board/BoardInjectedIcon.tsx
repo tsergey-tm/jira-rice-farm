@@ -3,7 +3,7 @@ import {jiraBoardDataStore} from "@/data/JiraData.ts";
 
 export const BoardInjectedIcon = observer(() => {
 
-    const hasData = jiraBoardDataStore.jrfBoardData !== null;
+    const hasData = !!jiraBoardDataStore.jrfBoardData.value;
 
     const iconUrl: string = chrome.runtime.getURL('icon32' + (hasData ? '' : 'bw') + '.png');
 

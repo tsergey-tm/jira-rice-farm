@@ -3,20 +3,28 @@ import {jiraBoardDataStore} from '@/data/JiraData.ts';
 import {calcRICEValues} from '@/utils/RICEUtils';
 import './BoardIssueCard.css';
 import {observer} from "mobx-react-lite";
+import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import {numberWithThousands} from "@/utils/FormatUtils.ts";
 
 interface BoardIssueCardProps {
     issueKey: string;
+    isCard: boolean;
 }
 
-export const BoardIssueCard: FC<BoardIssueCardProps> = observer(({issueKey}) => {
-    const boardData = jiraBoardDataStore.jrfBoardData;
-    const issueData = jiraBoardDataStore.getIssueData(issueKey);
+export const boardIssueCardInjectedClassName = 'jira-rice-farm-board-issue-injected';
 
-    if (!issueData.loaded || !boardData) {
+export const BoardIssueCard: FC<BoardIssueCardProps> = observer(({issueKey, isCard}) => {
+    const boardData = jiraBoardDataStore.jrfBoardData;
+    if (!boardData.loaded || !jiraBoardDataStore.jrfBoardData.value || !jiraBoardDataStore.jrfBoardData.value.issues) {
         return <div/>;
     }
 
-    const {riceValue} = calcRICEValues(boardData, issueData.value!);
+    const issueData: JRFIssueData | undefined = jiraBoardDataStore.jrfBoardData.value.issues[issueKey] || undefined;
+    if (!issueData) {
+        return <div/>;
+    }
+
+    const {riceValue} = calcRICEValues(boardData.value!, issueData);
 
     if (isNaN(riceValue)) {
         return <div/>;
@@ -24,9 +32,9 @@ export const BoardIssueCard: FC<BoardIssueCardProps> = observer(({issueKey}) => 
 
     return (
         <div
-            className="jira-rice-farm-board-issue-card-rice"
+            className={`${boardIssueCardInjectedClassName} jira-rice-farm-board-issue-${isCard ? 'card-rice' : 'item-rice'}`}
         >
-            RICE = {riceValue}
+            RICE = {numberWithThousands(riceValue)}
         </div>
     );
 });

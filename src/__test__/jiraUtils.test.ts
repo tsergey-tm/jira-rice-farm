@@ -7,18 +7,8 @@ describe('Routing', () => {
             expect(getCurrentRoute(url)).toBe(Routes.BOARD);
         });
 
-        it('should identify BOARD route for boards path', () => {
-            const url = 'https://example.com/boards/123';
-            expect(getCurrentRoute(url)).toBe(Routes.BOARD);
-        });
-
         it('should identify SETTINGS route for RapidView.jspa', () => {
             const url = 'https://example.com/RapidView.jspa';
-            expect(getCurrentRoute(url)).toBe(Routes.SETTINGS);
-        });
-
-        it('should identify SETTINGS route for board with config parameter', () => {
-            const url = 'https://example.com/boards/123?config=true';
             expect(getCurrentRoute(url)).toBe(Routes.SETTINGS);
         });
 

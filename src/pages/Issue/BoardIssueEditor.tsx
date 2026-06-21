@@ -1,7 +1,6 @@
 import {type ChangeEvent, type FC, useEffect, useMemo, useState} from "react";
 import Modal from "react-modal";
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
-import {getBoardId, getIssueData, setIssueData} from "@/utils/JiraUtils.ts";
 import {JRFBoardDataImpactCategoryLevelKeys, type JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
 import "./BoardIssueEditor.css";
 import {observer} from "mobx-react-lite";
@@ -29,28 +28,29 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
     const [formData, setFormData] = useState<JRFIssueData>(createDefaultIssueData());
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const boardId = getBoardId();
-    const boardData = jiraBoardDataStore.jrfBoardData;
+    const boardId = jiraBoardDataStore.boardId;
+    const boardData = jiraBoardDataStore.jrfBoardData.value;
 
-    const ensureImpactValues = (data: JRFIssueData): JRFIssueData => {
-        const impactCategories = jiraBoardDataStore.jrfBoardData?.impactCategories ?? [];
-        const defaultImpacts = impactCategories.reduce<JRFIssueData["impacts"]>((acc, category) => {
-            acc[category.name] = JRFBoardDataImpactCategoryLevelKeys.None;
-            return acc;
-        }, {});
-
-        return {
-            ...data,
-            impacts: {
-                ...defaultImpacts,
-                ...data.impacts
-            }
-        };
-    };
 
     // Загрузка данных задачи при открытии формы
     useEffect(() => {
         if (!isOpen || !issueKey) return;
+
+        const ensureImpactValues = (data: JRFIssueData): JRFIssueData => {
+            const impactCategories = boardData?.impactCategories ?? [];
+            const defaultImpacts = impactCategories.reduce<JRFIssueData["impacts"]>((acc, category) => {
+                acc[category.name] = JRFBoardDataImpactCategoryLevelKeys.None;
+                return acc;
+            }, {});
+
+            return {
+                ...data,
+                impacts: {
+                    ...defaultImpacts,
+                    ...data.impacts
+                }
+            };
+        };
 
         const loadIssueData = async () => {
             setIsLoading(true);
@@ -59,7 +59,8 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                     throw new Error("Не удалось получить boardId");
                 }
 
-                const data = await getIssueData(issueKey, boardId);
+                const bd = await jiraBoardDataStore.getFreshBoardInfo();
+                const data = (bd?.value?.issues) ? bd?.value?.issues[issueKey] : undefined;
                 setFormData(ensureImpactValues(data ?? createDefaultIssueData()));
             } catch (error) {
                 console.error("Ошибка загрузки данных задачи:", error);
@@ -71,7 +72,7 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
         };
 
         void loadIssueData();
-    }, [isOpen, issueKey, boardId]);
+    }, [isOpen, issueKey, boardId, boardData]);
 
     const errors = useMemo<Record<string, string>>(() => {
         const newErrors: Record<string, string> = {};
@@ -127,7 +128,7 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                 throw new Error("Не удалось получить boardId");
             }
 
-            await setIssueData(issueKey, formData, boardId);
+            await jiraBoardDataStore.modifyIssueDataAndSave(issueKey, formData);
             onClose();
         } catch (error) {
             console.error("Ошибка сохранения данных задачи:", error);

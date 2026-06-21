@@ -1,6 +1,6 @@
-import type {JRFBoardData, JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import type {JRFIssueData, JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
 
-export function calcRICEValues(boardData: JRFBoardData | null, issueData: JRFIssueData | null): {
+export function calcRICEValues(boardData: JRFOnlyBoardData | null, issueData: JRFIssueData | null): {
     riceValue: number,
     rValue: number,
     iValue: number,

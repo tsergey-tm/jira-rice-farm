@@ -3,4 +3,13 @@
     top: 0;
     right: 0;
     font-weight: bold;
+    color: #999999;
+}
+
+.jira-rice-farm-board-issue-item-rice {
+    position: absolute;
+    bottom: 0;
+    right: 0.5em;
+    font-weight: bold;
+    color: #999999;
 }

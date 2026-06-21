@@ -11,7 +11,8 @@
         "typecheck": "tsc --noEmit",
         "preview": "vite preview",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "validate": "npm run lint && npm run typecheck && npm run test && npm run build"
     },
     "dependencies": {
         "jsdom": "^29.1.1",

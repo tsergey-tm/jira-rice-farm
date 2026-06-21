@@ -1,6 +1,3 @@
-import type {JRFBoardData, JRFIssueData} from '@/types/JiraRiceFarmTypes.ts';
-import {JRF_KEYS_ISSUE, JRF_KEYS_PROJECT} from '@/types/JiraRiceFarmTypes.ts';
-
 export const Routes = {
     BOARD: 'BOARD',
     ISSUES_LIST: 'ISSUES_LIST',
@@ -16,11 +13,6 @@ const usedRoutes: Set<string> = new Set<string>([
     Routes.ISSUES_LIST,
     Routes.SETTINGS,
 ]);
-
-type JiraPropertyHolder<T> = {
-    key: string;
-    value: T;
-}
 
 export const isJira = () => {
     return document.body.id === 'jira' && usedRoutes.has(getCurrentRoute());
@@ -57,105 +49,3 @@ export const getBoardId = (): string | null => {
     }
     return null;
 }
-
-/**
- * Получение данных доски из Jira properties
- */
-export const getBoardData = async (boardId: string): Promise<JRFBoardData | null> => {
-    try {
-        const response = await fetch(`/rest/agile/1.0/board/${boardId}/properties/${JRF_KEYS_PROJECT}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                return null; // Данные не найдены
-            }
-            throw new Error(`Failed to fetch board data: ${response.status} ${response.statusText}`);
-        }
-
-        return await response.json().then(json => (json as JiraPropertyHolder<JRFBoardData>).value);
-    } catch (error) {
-        console.error('Error fetching board data:', error);
-        throw error;
-    }
-};
-
-/**
- * Запись данных доски в Jira properties
- */
-export const setBoardData = async (boardId: string, data: JRFBoardData): Promise<void> => {
-    try {
-        const response = await fetch(`/rest/agile/1.0/board/${boardId}/properties/${JRF_KEYS_PROJECT}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to set board data: ${response.status} ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('Error setting board data:', error);
-        throw error;
-    }
-};
-
-export const getIssueDataKey = (boardId: string): string => {
-    return `${JRF_KEYS_ISSUE}.${boardId}.v1`;
-};
-
-/**
- * Получение данных задачи из Jira properties
- */
-export const getIssueData = async (issueIdOrKey: string, boardId: string): Promise<JRFIssueData | null> => {
-    try {
-        const response = await fetch(`/rest/api/2/issue/${issueIdOrKey}/properties/${getIssueDataKey(boardId)}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                return null; // Данные не найдены
-            }
-            throw new Error(`Failed to fetch issue data: ${response.status} ${response.statusText}`);
-        }
-
-        return await response.json().then(json => (json as JiraPropertyHolder<JRFIssueData>).value);
-    } catch (error) {
-        console.error('Error fetching issue data:', error);
-        throw error;
-    }
-};
-
-/**
- * Запись данных задачи в Jira properties
- */
-export const setIssueData = async (issueIdOrKey: string, data: JRFIssueData, boardId: string): Promise<void> => {
-    try {
-        const response = await fetch(`/rest/api/2/issue/${issueIdOrKey}/properties/${getIssueDataKey(boardId)}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to set issue data: ${response.status} ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('Error setting issue data:', error);
-        throw error;
-    }
-};

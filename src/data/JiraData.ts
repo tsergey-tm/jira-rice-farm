@@ -1,26 +1,26 @@
-import {makeAutoObservable, observable} from 'mobx';
-import type {JRFBoardData, JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
-import {getBoardData, getBoardId, getIssueData, isJira} from "@/utils/JiraUtils.ts";
+import {makeAutoObservable} from 'mobx';
+import type {JRFBoardData, JRFIssueData, JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
+import {getBoardId, isJira} from "@/utils/JiraUtils.ts";
 import {type TabMessage, TabMessageType} from "@/types/Message.ts";
+import {jiraDataSaverLoad, jiraDataSaverSave} from "@/data/JiraDataSaver.ts";
 
 
-export type JRFIssueDataInfo = {
+export type JRFBoardDataInfo = {
     loaded: boolean;
-    value: JRFIssueData | undefined;
+    value: JRFBoardData | undefined;
 }
 
 export class JiraBoardDataStore {
     readonly isJira: boolean;
     readonly boardId: string | null;
-    jrfBoardData: JRFBoardData | null = null;
-    #jrfIssues: { [key: string]: JRFIssueDataInfo } = {};
+    jrfBoardData: JRFBoardDataInfo = {loaded: false, value: undefined};
 
     constructor() {
         this.isJira = isJira();
         this.boardId = getBoardId();
 
         if (this.boardId !== null) {
-            void getBoardData(this.boardId).then(data => {
+            void jiraDataSaverLoad(this.boardId).then(data => {
                 if (data) {
                     this.#setBoardData(data);
                 }
@@ -33,13 +33,7 @@ export class JiraBoardDataStore {
                         if (message.boardId === this.boardId) {
 
                             console.log('[Jira RICE farm] Board data changed');
-                            jiraBoardDataStore.forceReloadBoardInfo();
-                        }
-                        break;
-                    case TabMessageType.ISSUE_DATA_CHANGED:
-                        if (message.issueId && this.#jrfIssues[message.issueId]) {
-                            console.log('[Jira RICE farm] Board data changed');
-                            this.#loadIsssueData(message.issueId);
+                            void jiraBoardDataStore.forceReloadBoardInfo();
                         }
                         break;
                     default:
@@ -51,60 +45,72 @@ export class JiraBoardDataStore {
         makeAutoObservable(this);
     }
 
-    #setBoardData(data: JRFBoardData) {
-        this.jrfBoardData = {...data};
+    #setBoardData(data: JRFBoardData | undefined) {
+        this.jrfBoardData = {loaded: true, value: data};
     }
 
-    forceReloadBoardInfo = () => {
+    forceReloadBoardInfo = async (): Promise<JRFBoardDataInfo | null> => {
         if (this.boardId !== null) {
-            void getBoardData(this.boardId).then(data => {
-                if (data) {
-                    this.#setBoardData(data);
-                }
-            });
-        }
-    }
-
-    #setIssueData(key: string, value: JRFIssueData) {
-        if (this.#jrfIssues[key]) {
-            this.#jrfIssues[key].value = value;
-        } else {
-            this.#jrfIssues[key] = observable({
-                loaded: true,
-                value: value,
-            })
-        }
-    }
-
-    getIssueData(key: string) {
-        if (this.boardId !== null) {
-            let res: JRFIssueDataInfo | undefined = this.#jrfIssues[key];
-            if (!res) {
-                res = observable({
-                    loaded: false,
-                    value: undefined,
-                })
-                this.#loadIsssueData(key);
+            const data = await this.getFreshBoardInfo();
+            if (data) {
+                this.#setBoardData(data.value);
             }
-
-            return res;
+            return data;
         } else {
-            return {
-                loaded: false,
-                value: undefined,
-            };
+            return Promise.resolve(null);
         }
     }
 
-    #loadIsssueData(key: string) {
+    getFreshBoardInfo = async (): Promise<JRFBoardDataInfo | null> => {
         if (this.boardId !== null) {
-            void getIssueData(key, this.boardId).then(data => {
-                if (data) {
-                    this.#setIssueData(key, data);
-                }
-            });
+            const data = await jiraDataSaverLoad(this.boardId);
+            return {loaded: true, value: data || undefined};
+        } else {
+            return Promise.resolve(null);
         }
     }
+
+    modifyBoardDataAndSave = async (newValues: JRFOnlyBoardData) => {
+        if (this.boardId === null) {
+            return;
+        }
+
+        const bd: JRFBoardDataInfo | null = await this.getFreshBoardInfo();
+
+        let data: JRFBoardData | null = bd?.value || null;
+
+        if (data === null) {
+            data = {
+                ...newValues,
+                issues: {}
+            }
+        } else {
+            data = {
+                ...newValues,
+                issues: data.issues
+            }
+        }
+
+        await jiraDataSaverSave(this.boardId, data).then(() => this.forceReloadBoardInfo());
+    }
+
+    modifyIssueDataAndSave = async (issueKey: string, newValues: JRFIssueData) => {
+        if (this.boardId === null) {
+            return;
+        }
+
+        const data: JRFBoardDataInfo | null = await this.getFreshBoardInfo();
+        if (!data || !data.value) {
+            throw new Error(`Board data empty, fill it first`);
+        } else {
+            if (!data.value.issues) {
+                data.value.issues = {};
+            }
+            data.value.issues[issueKey] = newValues;
+            await jiraDataSaverSave(this.boardId, data.value).then(() => this.forceReloadBoardInfo());
+        }
+    }
+
 }
 
 export const jiraBoardDataStore = new JiraBoardDataStore();

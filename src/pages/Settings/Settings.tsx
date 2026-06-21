@@ -1,8 +1,8 @@
 import {type ChangeEvent, type FC, type UIEvent, useEffect, useMemo, useState} from "react";
 import Modal from "react-modal";
-import {type JRFBoardData, JRFBoardDataImpactCategoryLevelKeys} from "@/types/JiraRiceFarmTypes.ts";
+import {JRFBoardDataImpactCategoryLevelKeys, type JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
 import './Settings.css';
-import {getBoardData, getBoardId, setBoardData} from "@/utils/JiraUtils.ts";
+import {jiraBoardDataStore} from "@/data/JiraData.ts";
 
 Modal.setAppElement('#jira')
 
@@ -40,7 +40,7 @@ function createEmptyCategory() {
     };
 }
 
-function initFormData(): JRFBoardData {
+function initFormData(): JRFOnlyBoardData {
     return {
         reachDivider: 100,
         impactCategories: [
@@ -58,7 +58,7 @@ function initFormData(): JRFBoardData {
     };
 }
 
-const validateFormData = (formData: JRFBoardData): Record<string, string> => {
+const validateFormData = (formData: JRFOnlyBoardData): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.reachDivider || formData.reachDivider < 1 || formData.reachDivider > 1000000) {
@@ -144,7 +144,7 @@ const validateFormData = (formData: JRFBoardData): Record<string, string> => {
 
 export const Settings: FC = () => {
     const [showSettings, setShowSettings] = useState(false);
-    const [formData, setFormData] = useState<JRFBoardData>({
+    const [formData, setFormData] = useState<JRFOnlyBoardData>({
         reachDivider: 1,
         impactCategories: [],
         confidences: [],
@@ -152,7 +152,7 @@ export const Settings: FC = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const boardId = getBoardId();
+    const boardId = jiraBoardDataStore.boardId;
 
     // Загрузка данных из Jira
     useEffect(() => {
@@ -165,9 +165,9 @@ export const Settings: FC = () => {
                     throw new Error("Не удалось получить boardId");
                 }
 
-                const data = await getBoardData(boardId);
-                if (data) {
-                    setFormData(data);
+                const data = await jiraBoardDataStore.getFreshBoardInfo();
+                if (data && data.value) {
+                    setFormData(data.value);
                 } else {
                     // Если данных нет, используем значения по умолчанию
                     setFormData(initFormData());
@@ -216,7 +216,7 @@ export const Settings: FC = () => {
                 throw new Error("Не удалось получить boardId");
             }
 
-            await setBoardData(boardId, formData);
+            await jiraBoardDataStore.modifyBoardDataAndSave(formData);
         } catch (error) {
             console.error("Ошибка сохранения настроек:", error);
             alert("Ошибка при сохранении настроек");
