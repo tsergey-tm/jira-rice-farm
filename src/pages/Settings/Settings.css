@@ -174,7 +174,7 @@
     resize: vertical;
 }
 
-.jira-rice-farm-settings-form button {
+jira-rice-farm-settings-form button:not(.jira-rice-farm-settings-mode-button) {
     padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
@@ -217,17 +217,13 @@
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
-    background-color: #ecf0f1;
+    background-color: #ecf0f1 !important;
     color: #2c3e50;
     border-right: 1px solid #dcdcdc;
 }
 
-.jira-rice-farm-settings-mode-button:last-child {
-    border-right: none;
-}
-
 .jira-rice-farm-settings-mode-button-active {
-    background-color: #3498db;
+    background-color: #3498db !important;
     color: white;
 }
 

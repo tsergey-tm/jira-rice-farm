@@ -27,7 +27,7 @@ const processIssues = (): boolean => {
         if (issueKey) {
             let boardIssueInjection = findElement(el, boardIssueInjectionClassName);
             if (!boardIssueInjection) {
-                const container = findElement(el, 'ghx-issue-fields');
+                const container = findElement(el, 'ghx-key');
 
                 if (container) {
                     boardIssueInjection = document.createElement('div');

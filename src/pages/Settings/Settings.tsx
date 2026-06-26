@@ -183,7 +183,7 @@ export const Settings: FC = () => {
                     throw new Error("Не удалось получить boardId");
                 }
 
-                const data = await jiraBoardDataStore.getFreshBoardInfo();
+                const data = await jiraBoardDataStore.getRawBoardData();
                 if (data) {
                     if (data.type === 'link') {
                         setBoardMode('link');

@@ -78,7 +78,7 @@ export class JiraBoardDataStore {
                 data = await this.getRawBoardData(loadedBoardId);
             }
 
-            if (data && data.type === 'data' && this.#boardIdFormUrl !== loadedBoardId) {
+            if (data && (data.type === 'data' || data.type === undefined) && this.#boardIdFormUrl !== loadedBoardId) {
                 this.#boardId = loadedBoardId;
             }
 
@@ -88,8 +88,12 @@ export class JiraBoardDataStore {
         }
     }
 
-    private getRawBoardData(loadedBoardId: string) {
-        return jiraDataSaverLoad(loadedBoardId);
+    async getRawBoardData(loadedBoardId: string | undefined = undefined): Promise<JRFBoardData | null> {
+        const bId = loadedBoardId ? loadedBoardId : this.#boardIdFormUrl;
+        if (!bId) {
+            return null;
+        }
+        return await jiraDataSaverLoad(bId);
     }
 
     modifyBoardDataAndSave = async (newValues: JRFOnlyBoardData) => {
