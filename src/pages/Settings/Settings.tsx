@@ -8,6 +8,7 @@ import {
 } from "@/types/JiraRiceFarmTypes.ts";
 import './Settings.css';
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
+import {getBoardIdFromUrl} from "@/utils/JiraUtils.ts";
 
 Modal.setAppElement('#jira')
 
@@ -168,6 +169,7 @@ export const Settings: FC = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [formData, setFormData] = useState<JRFBoardDataWithIssues>(getFormDataInitialState());
     const [linkedBoardId, setLinkedBoardId] = useState("");
+    const [boardUrl, setBoardUrl] = useState("");
     const [boardMode, setBoardMode] = useState<'data' | 'link'>('data');
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -189,6 +191,7 @@ export const Settings: FC = () => {
                         setBoardMode('link');
                         setLinkedBoardId(data.linkedBoardId);
                         setFormData(getFormDataInitialState());
+                        setBoardUrl("");
                     } else {
                         setBoardMode('data');
                         setFormData(data);
@@ -285,6 +288,7 @@ export const Settings: FC = () => {
 
         if (mode === 'link') {
             setBoardMode('link');
+            setBoardUrl("");
         } else {
             setBoardMode('data');
         }
@@ -292,6 +296,15 @@ export const Settings: FC = () => {
 
     const handleLinkedBoardIdChange = (e: ChangeEvent<HTMLInputElement>) => {
         setLinkedBoardId(e.target.value);
+    };
+
+    const handleBoardUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const urlValue = e.target.value;
+        setBoardUrl(urlValue);
+        const extractedId = getBoardIdFromUrl(urlValue);
+        if (extractedId) {
+            setLinkedBoardId(extractedId);
+        }
     };
 
     const handleCategoryChange = (index: number, field: CategoryField, value: string) => {
@@ -442,19 +455,32 @@ export const Settings: FC = () => {
                     </div>
 
                     {boardMode === 'link' ? (
-                        <div
-                            className={`jira-rice-farm-settings-form-group ${errors.linkedBoardId ? 'jira-rice-farm-settings-error' : ''}`}>
-                            <label htmlFor="linkedBoardId">ID связанной доски</label>
-                            <input
-                                id="linkedBoardId"
-                                type="text"
-                                value={linkedBoardId}
-                                onChange={handleLinkedBoardIdChange}
-                                placeholder="Введите ID доски"
-                            />
-                            {errors.linkedBoardId &&
-                                <span className="jira-rice-farm-settings-error-message">{errors.linkedBoardId}</span>}
-                        </div>
+                        <>
+                            <div className="jira-rice-farm-settings-form-group">
+                                <label htmlFor="boardUrl">URL доски Jira</label>
+                                <input
+                                    id="boardUrl"
+                                    type="text"
+                                    value={boardUrl}
+                                    onChange={handleBoardUrlChange}
+                                    placeholder="Введите URL доски Jira"
+                                />
+                            </div>
+                            <div
+                                className={`jira-rice-farm-settings-form-group ${errors.linkedBoardId ? 'jira-rice-farm-settings-error' : ''}`}>
+                                <label htmlFor="linkedBoardId">ID связанной доски</label>
+                                <input
+                                    id="linkedBoardId"
+                                    type="text"
+                                    value={linkedBoardId}
+                                    onChange={handleLinkedBoardIdChange}
+                                    placeholder="Введите ID доски"
+                                />
+                                {errors.linkedBoardId &&
+                                    <span
+                                        className="jira-rice-farm-settings-error-message">{errors.linkedBoardId}</span>}
+                            </div>
+                        </>
                     ) : (<></>)}
 
                     {boardMode === 'data' && (

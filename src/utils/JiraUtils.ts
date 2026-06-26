@@ -39,13 +39,24 @@ export const getCurrentRoute = (url: string | undefined = undefined) => {
     return Routes.NONE;
 };
 
-export const getBoardIdFromUrl = (): string | null => {
-    // Получаем boardId из URL
-    const {pathname, search} = window.location;
+export const getBoardIdFromUrl = (urlStr?: string): string | null => {
+    let url: URL;
+    try {
+        if (urlStr) {
+            url = new URL(urlStr);
+        } else {
+            url = new URL(window.location.href);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_) {
+        return null;
+    }
+
+    const {pathname, search} = url;
     const params = new URLSearchParams(search);
 
     if (pathname.includes('RapidView.jspa') || pathname.includes('RapidBoard.jspa')) {
         return params.get('rapidView');
     }
     return null;
-}
+};
