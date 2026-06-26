@@ -1,5 +1,5 @@
 import {makeAutoObservable} from 'mobx';
-import type {JRFBoardData, JRFIssueData, JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
+import type {JRFBoardData, JRFBoardDataLink, JRFIssueData, JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
 import {getBoardIdFromUrl, isJira} from "@/utils/JiraUtils.ts";
 import {type TabMessage, TabMessageType} from "@/types/Message.ts";
 import {jiraDataSaverLoad, jiraDataSaverSave} from "@/data/JiraDataSaver.ts";
@@ -118,6 +118,14 @@ export class JiraBoardDataStore {
         }
 
         await jiraDataSaverSave(this.#boardIdFormUrl, data).then(() => this.forceReloadBoardInfo());
+    }
+
+    modifyBoardLinkAndSave = async (newValues: JRFBoardDataLink) => {
+        if (this.#boardIdFormUrl === null) {
+            return;
+        }
+
+        await jiraDataSaverSave(this.#boardIdFormUrl, newValues).then(() => this.forceReloadBoardInfo());
     }
 
     modifyIssueDataAndSave = async (issueKey: string, newValues: JRFIssueData) => {
