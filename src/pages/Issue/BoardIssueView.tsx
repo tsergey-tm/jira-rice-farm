@@ -5,7 +5,7 @@ import {getLocalStorageItem, setLocalStorageItem} from "@/utils/LocalStorage.ts"
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
 import {calcRICEValues} from "@/utils/RICEUtils.ts";
 import {observer} from "mobx-react-lite";
-import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import type {JRFBoardDataWithIssues, JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
 import {numberWithThousands} from "@/utils/FormatUtils.ts";
 
 
@@ -42,15 +42,17 @@ const getBoardIssueViewCollapsedState = (): BoardIssueViewCollapsedState => {
 
 export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => {
 
-    const boardData = jiraBoardDataStore.jrfBoardData;
+    const boardDataInfo = jiraBoardDataStore.jrfBoardData;
 
-    if (!boardData.loaded || !boardData.value) {
+    if (!boardDataInfo.loaded || !boardDataInfo.value) {
         return <></>;
     }
 
+    const boardData = boardDataInfo.value as JRFBoardDataWithIssues;
+
     const [editorOpen, setEditorOpen] = useState(false);
     const [collapsed, _setCollapsed] = useState<BoardIssueViewCollapsedState>(() => getBoardIssueViewCollapsedState());
-    const issueData: JRFIssueData | undefined = (boardData.value.issues) ? (boardData.value.issues[issueKey] || undefined) : undefined;
+    const issueData: JRFIssueData | undefined = (boardData.issues) ? (boardData.issues[issueKey] || undefined) : undefined;
 
     const {
         riceValue,
@@ -58,7 +60,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
         iValue,
         cValue,
         eValue
-    } = issueData ? calcRICEValues(boardData.value, issueData) : {
+    } = issueData ? calcRICEValues(boardData, issueData) : {
         riceValue: null,
         rValue: null,
         iValue: null,
@@ -192,7 +194,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
                             {!collapsed.i && issueData && (
                                 <div className="jira-rice-farm-board-issue-view-subsection">
                                     {Object.entries(issueData.impacts).map(([name, value]) => {
-                                        const category = jiraBoardDataStore.jrfBoardData.value?.impactCategories.find(cat => cat.name === name);
+                                        const category = boardData.impactCategories.find(cat => cat.name === name);
                                         return (
                                             <div key={name}
                                                  className="jira-rice-farm-board-issue-view-subsection-item">
@@ -227,7 +229,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
                             {!collapsed.c && issueData && (
                                 <div className="jira-rice-farm-board-issue-view-subsection">
                                     <div className="jira-rice-farm-board-issue-view-subsection-item">
-                                        {jiraBoardDataStore.jrfBoardData.value?.confidences.find(conf => conf.name === issueData.confidence)?.name || ''}
+                                        {boardData.confidences.find(conf => conf.name === issueData.confidence)?.name || ''}
                                     </div>
                                 </div>
                             )}
@@ -256,7 +258,7 @@ export const BoardIssueView: FC<BoardIssueViewProps> = observer(({issueKey}) => 
                             {!collapsed.e && issueData && (
                                 <div className="jira-rice-farm-board-issue-view-subsection">
                                     <div className="jira-rice-farm-board-issue-view-subsection-item">
-                                        {jiraBoardDataStore.jrfBoardData.value?.effortDescription || ''}
+                                        {boardData.effortDescription || ''}
                                     </div>
                                 </div>
                             )}

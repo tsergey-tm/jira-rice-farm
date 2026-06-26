@@ -1,7 +1,11 @@
 import {type ChangeEvent, type FC, useEffect, useMemo, useState} from "react";
 import Modal from "react-modal";
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
-import {JRFBoardDataImpactCategoryLevelKeys, type JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import {
+    JRFBoardDataImpactCategoryLevelKeys,
+    type JRFBoardDataWithIssues,
+    type JRFIssueData
+} from "@/types/JiraRiceFarmTypes.ts";
 import "./BoardIssueEditor.css";
 import {observer} from "mobx-react-lite";
 
@@ -28,8 +32,8 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
     const [formData, setFormData] = useState<JRFIssueData>(createDefaultIssueData());
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const boardId = jiraBoardDataStore.boardId;
-    const boardData = jiraBoardDataStore.jrfBoardData.value;
+    const boardId = jiraBoardDataStore.getBoardId();
+    const boardData = jiraBoardDataStore.jrfBoardData.value as JRFBoardDataWithIssues;
 
 
     // Загрузка данных задачи при открытии формы
@@ -59,8 +63,9 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                     throw new Error("Не удалось получить boardId");
                 }
 
-                const bd = await jiraBoardDataStore.getFreshBoardInfo();
-                const data = (bd?.value?.issues) ? bd?.value?.issues[issueKey] : undefined;
+                const bdi = await jiraBoardDataStore.getFreshBoardInfo();
+                const bd = bdi?.value as JRFBoardDataWithIssues;
+                const data = (bd?.issues) ? bd?.issues[issueKey] : undefined;
                 setFormData(ensureImpactValues(data ?? createDefaultIssueData()));
             } catch (error) {
                 console.error("Ошибка загрузки данных задачи:", error);

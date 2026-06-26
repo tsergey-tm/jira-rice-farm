@@ -39,7 +39,7 @@ export const getCurrentRoute = (url: string | undefined = undefined) => {
     return Routes.NONE;
 };
 
-export const getBoardId = (): string | null => {
+export const getBoardIdFromUrl = (): string | null => {
     // Получаем boardId из URL
     const {pathname, search} = window.location;
     const params = new URLSearchParams(search);

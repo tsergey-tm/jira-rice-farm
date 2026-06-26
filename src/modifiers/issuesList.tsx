@@ -1,7 +1,7 @@
 import type {ModifyProcessor} from "./types.ts";
 import {jiraBoardDataStore, type JRFBoardDataInfo} from "@/data/JiraData.ts";
 import {calcRICEValues} from "@/utils/RICEUtils.ts";
-import type {JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
+import type {JRFBoardDataWithIssues, JRFIssueData} from "@/types/JiraRiceFarmTypes.ts";
 import {BoardIssueCard, boardIssueCardInjectedClassName} from "@/pages/Issue/BoardIssueCard.tsx";
 import {createRoot} from "react-dom/client";
 import {StrictMode} from "react";
@@ -18,7 +18,7 @@ const injectIssues = () => {
     const issueElements = Array.from(container.querySelectorAll(issueSelector));
     if (issueElements.length === 0) return;
 
-    const boardId = jiraBoardDataStore.boardId;
+    const boardId = jiraBoardDataStore.getBoardId();
     const boardData: JRFBoardDataInfo = jiraBoardDataStore.jrfBoardData;
 
     if (!boardId || !boardData.loaded) {
@@ -52,19 +52,22 @@ const reorderIssues = () => {
     if (issueElements.length === 0) return;
 
     const issueKeys = issueElements.map(el => el.getAttribute("data-issue-key"));
-    const boardId = jiraBoardDataStore.boardId;
+    const boardId = jiraBoardDataStore.getBoardId();
     const boardData: JRFBoardDataInfo = jiraBoardDataStore.jrfBoardData;
 
-    if (!boardId || !boardData.loaded) {
+    if (!boardId || !boardData.loaded || !boardData.value || boardData.value.type === 'link') {
         return;
     }
 
     try {
+
+        const bData: JRFBoardDataWithIssues = boardData.value;
+
         // Расчет и сортировка
         const issueDataMap = new Map<string, JRFIssueData>();
         issueKeys.forEach((key) => {
             if (key) {
-                const data = boardData.value?.issues[key];
+                const data = bData.issues[key];
                 if (data) {
                     issueDataMap.set(key, data);
                 }
@@ -74,7 +77,7 @@ const reorderIssues = () => {
         const tasksWithRICE = issueElements.map(el => {
             const key = el.getAttribute("data-issue-key");
             const issueData = key ? issueDataMap.get(key) || null : null;
-            const {riceValue} = calcRICEValues(boardData.value!, issueData);
+            const {riceValue} = calcRICEValues(bData, issueData);
             return {el, riceValue};
         });
 

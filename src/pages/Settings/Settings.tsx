@@ -152,7 +152,7 @@ export const Settings: FC = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const boardId = jiraBoardDataStore.boardId;
+    const boardId = jiraBoardDataStore.getBoardId();
 
     // Загрузка данных из Jira
     useEffect(() => {
@@ -166,7 +166,7 @@ export const Settings: FC = () => {
                 }
 
                 const data = await jiraBoardDataStore.getFreshBoardInfo();
-                if (data && data.value) {
+                if (data && data.value && data.value.type !== 'link') {
                     setFormData(data.value);
                 } else {
                     // Если данных нет, используем значения по умолчанию

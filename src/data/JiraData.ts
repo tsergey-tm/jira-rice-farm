@@ -1,6 +1,6 @@
 import {makeAutoObservable} from 'mobx';
 import type {JRFBoardData, JRFIssueData, JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
-import {getBoardId, isJira} from "@/utils/JiraUtils.ts";
+import {getBoardIdFromUrl, isJira} from "@/utils/JiraUtils.ts";
 import {type TabMessage, TabMessageType} from "@/types/Message.ts";
 import {jiraDataSaverLoad, jiraDataSaverSave} from "@/data/JiraDataSaver.ts";
 
@@ -12,25 +12,22 @@ export type JRFBoardDataInfo = {
 
 export class JiraBoardDataStore {
     readonly isJira: boolean;
-    readonly boardId: string | null;
+    #boardId: string | null = null;
+    readonly #boardIdFormUrl: string | null;
     jrfBoardData: JRFBoardDataInfo = {loaded: false, value: undefined};
 
     constructor() {
         this.isJira = isJira();
-        this.boardId = getBoardId();
+        this.#boardIdFormUrl = getBoardIdFromUrl();
 
-        if (this.boardId !== null) {
-            void jiraDataSaverLoad(this.boardId).then(data => {
-                if (data) {
-                    this.#setBoardData(data);
-                }
-            });
+        if (this.#boardIdFormUrl !== null) {
+            void this.forceReloadBoardInfo();
 
             // Register listener fo messages
             chrome.runtime.onMessage.addListener((message: TabMessage) => {
                 switch (message.type) {
                     case TabMessageType.BOARD_DATA_CHANGED:
-                        if (message.boardId === this.boardId) {
+                        if (message.boardId === this.#boardIdFormUrl || message.boardId === this.#boardId) {
 
                             console.log('[Jira RICE farm] Board data changed');
                             void jiraBoardDataStore.forceReloadBoardInfo();
@@ -49,11 +46,16 @@ export class JiraBoardDataStore {
         this.jrfBoardData = {loaded: true, value: data};
     }
 
-    forceReloadBoardInfo = async (): Promise<JRFBoardDataInfo | null> => {
-        if (this.boardId !== null) {
+    getBoardId(): string | null {
+
+        return this.#boardId ? this.#boardId : this.#boardIdFormUrl;
+    }
+
+    forceReloadBoardInfo = async (): Promise<JRFBoardData | null> => {
+        if (this.#boardIdFormUrl !== null) {
             const data = await this.getFreshBoardInfo();
             if (data) {
-                this.#setBoardData(data.value);
+                this.#setBoardData(data);
             }
             return data;
         } else {
@@ -61,56 +63,83 @@ export class JiraBoardDataStore {
         }
     }
 
-    getFreshBoardInfo = async (): Promise<JRFBoardDataInfo | null> => {
-        if (this.boardId !== null) {
-            const data = await jiraDataSaverLoad(this.boardId);
-            return {loaded: true, value: data || undefined};
+    getFreshBoardInfo = async (): Promise<JRFBoardData | null> => {
+        const loopDetector: Set<string> = new Set<string>();
+        if (this.#boardIdFormUrl !== null) {
+            loopDetector.add(this.#boardIdFormUrl);
+            let loadedBoardId = this.#boardIdFormUrl;
+            let data = await this.getRawBoardData(loadedBoardId);
+            while (data && data.type === 'link' && data.linkedBoardId) {
+                if (loopDetector.has(data.linkedBoardId)) {
+                    throw new Error(`Linked loop detected`);
+                }
+                loadedBoardId = data.linkedBoardId;
+                loopDetector.add(loadedBoardId);
+                data = await this.getRawBoardData(loadedBoardId);
+            }
+
+            if (data && data.type === 'data' && this.#boardIdFormUrl !== loadedBoardId) {
+                this.#boardId = loadedBoardId;
+            }
+
+            return data || null;
         } else {
             return Promise.resolve(null);
         }
     }
 
+    private getRawBoardData(loadedBoardId: string) {
+        return jiraDataSaverLoad(loadedBoardId);
+    }
+
     modifyBoardDataAndSave = async (newValues: JRFOnlyBoardData) => {
-        if (this.boardId === null) {
+        if (this.#boardIdFormUrl === null) {
             return;
         }
 
-        const bd: JRFBoardDataInfo | null = await this.getFreshBoardInfo();
+        let data: JRFBoardData | null = await this.getRawBoardData(this.#boardIdFormUrl);
 
-        let data: JRFBoardData | null = bd?.value || null;
+        if (data?.type === 'link') {
+            throw new Error(`This board linked to board ${data.linkedBoardId}. Editing this board is prohibited.`);
+        }
 
         if (data === null) {
             data = {
                 ...newValues,
-                issues: {}
+                issues: {},
+                type: 'data'
             }
         } else {
             data = {
                 ...newValues,
+                type: 'data',
                 issues: data.issues
             }
         }
 
-        await jiraDataSaverSave(this.boardId, data).then(() => this.forceReloadBoardInfo());
+        await jiraDataSaverSave(this.#boardIdFormUrl, data).then(() => this.forceReloadBoardInfo());
     }
 
     modifyIssueDataAndSave = async (issueKey: string, newValues: JRFIssueData) => {
-        if (this.boardId === null) {
+        const bId = this.getBoardId();
+        if (bId === null) {
             return;
         }
 
-        const data: JRFBoardDataInfo | null = await this.getFreshBoardInfo();
-        if (!data || !data.value) {
-            throw new Error(`Board data empty, fill it first`);
-        } else {
-            if (!data.value.issues) {
-                data.value.issues = {};
-            }
-            data.value.issues[issueKey] = newValues;
-            await jiraDataSaverSave(this.boardId, data.value).then(() => this.forceReloadBoardInfo());
-        }
-    }
+        const data: JRFBoardData | null = await this.getFreshBoardInfo();
 
+        if (!data) {
+            throw new Error(`Board data empty, fill it first`);
+        } else if (data.type === 'link') {
+            throw new Error(`You can't edit linked board`);
+        }
+
+        if (!data.issues) {
+            data.issues = {};
+        }
+        data.issues[issueKey] = newValues;
+        await jiraDataSaverSave(bId, data).then(() => this.forceReloadBoardInfo());
+    }
 }
 
 export const jiraBoardDataStore = new JiraBoardDataStore();

@@ -40,7 +40,15 @@ export type JRFOnlyBoardData = {
     effortDescription: string;
 }
 
-export type JRFBoardData = JRFOnlyBoardData & {
+export type JRFBoardDataWithIssues = JRFOnlyBoardData & {
     issues: { [key: string]: JRFIssueData };
+    type: undefined | 'data';
 }
+
+export type JRFBoardDataLink = {
+    type: 'link';
+    linkedBoardId: string;
+}
+
+export type JRFBoardData = JRFBoardDataWithIssues | JRFBoardDataLink;
 
