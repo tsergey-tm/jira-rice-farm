@@ -1,6 +1,11 @@
 import {type ChangeEvent, type FC, type UIEvent, useEffect, useMemo, useState} from "react";
 import Modal from "react-modal";
-import {JRFBoardDataImpactCategoryLevelKeys, type JRFOnlyBoardData} from "@/types/JiraRiceFarmTypes.ts";
+import {
+    type JRFBoardData,
+    JRFBoardDataImpactCategoryLevelKeys,
+    type JRFBoardDataWithIssues,
+    type JRFOnlyBoardData
+} from "@/types/JiraRiceFarmTypes.ts";
 import './Settings.css';
 import {jiraBoardDataStore} from "@/data/JiraData.ts";
 
@@ -58,25 +63,33 @@ function initFormData(): JRFOnlyBoardData {
     };
 }
 
-const validateFormData = (formData: JRFOnlyBoardData): Record<string, string> => {
+const validateFormData = (formData: JRFBoardData, mode: 'data' | 'link', linkedBoardId: string): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.reachDivider || formData.reachDivider < 1 || formData.reachDivider > 1000000) {
+    if (mode === 'link') {
+        if (!linkedBoardId?.trim()) {
+            newErrors.linkedBoardId = "ID связанной доски не может быть пустым";
+        }
+        return newErrors;
+    }
+
+    const data = formData as JRFOnlyBoardData;
+
+    if (!data.reachDivider || data.reachDivider < 1 || data.reachDivider > 1000000) {
         newErrors.reachDivider = "Делитель для Reach должен быть положительным числом от 1 до 1_000_000";
     }
 
-    if (!formData.impactCategories || formData.impactCategories.length < 1 || formData.impactCategories.length > 10) {
+    if (!data.impactCategories || data.impactCategories.length < 1 || data.impactCategories.length > 10) {
         newErrors.impactCategories = "Количество категорий должно быть от 1 до 10";
     } else {
-        // Проверка уникальности name во всём массиве impactCategories
-        const impactCategoryNames = formData.impactCategories.map(category => category.name);
+        const impactCategoryNames = data.impactCategories.map(category => category.name);
         impactCategoryNames.forEach((name, index) => {
             if (impactCategoryNames.indexOf(name) !== index) {
                 newErrors[`impactCategories.${index}.name`] = "Все категории должны иметь уникальные имена";
             }
         });
 
-        formData.impactCategories.forEach((category, index) => {
+        data.impactCategories.forEach((category, index) => {
             if (!category.name?.trim()) {
                 newErrors[`impactCategories.${index}.name`] = "Имя категории не может быть пустым";
             }
@@ -84,7 +97,6 @@ const validateFormData = (formData: JRFOnlyBoardData): Record<string, string> =>
                 newErrors[`impactCategories.${index}.description`] = "Описание категории не может быть пустым";
             }
 
-            // Проверка уникальности names[] в рамках одного элемента impactCategories
             const levelNames = Object.values(category.names);
             levelNames.forEach((name, i) => {
                 if (levelNames.indexOf(name) !== i) {
@@ -114,13 +126,12 @@ const validateFormData = (formData: JRFOnlyBoardData): Record<string, string> =>
         });
     }
 
-    if (!formData.confidences || formData.confidences.length < 1 || formData.confidences.length > 10) {
+    if (!data.confidences || data.confidences.length < 1 || data.confidences.length > 10) {
         newErrors.confidences = "Количество уверенностей должно быть от 1 до 10";
     } else {
-        // Проверка уникальности confidences[].name
-        const confidenceNames = formData.confidences.map(confidence => confidence.name);
+        const confidenceNames = data.confidences.map(confidence => confidence.name);
 
-        formData.confidences.forEach((confidence, index) => {
+        data.confidences.forEach((confidence, index) => {
             if (!confidence.name?.trim()) {
                 newErrors[`confidences.${index}.name`] = "Имя уверенности не может быть пустым";
             }
@@ -135,26 +146,33 @@ const validateFormData = (formData: JRFOnlyBoardData): Record<string, string> =>
         });
     }
 
-    if (!formData.effortDescription?.trim()) {
+    if (!data.effortDescription?.trim()) {
         newErrors.effortDescription = "Описание усилий не может быть пустым";
     }
 
     return newErrors;
 };
 
-export const Settings: FC = () => {
-    const [showSettings, setShowSettings] = useState(false);
-    const [formData, setFormData] = useState<JRFOnlyBoardData>({
+function getFormDataInitialState(): JRFBoardDataWithIssues {
+    return {
+        type: 'data',
         reachDivider: 1,
         impactCategories: [],
         confidences: [],
-        effortDescription: ""
-    });
+        effortDescription: "",
+        issues: {}
+    };
+}
+
+export const Settings: FC = () => {
+    const [showSettings, setShowSettings] = useState(false);
+    const [formData, setFormData] = useState<JRFBoardDataWithIssues>(getFormDataInitialState());
+    const [linkedBoardId, setLinkedBoardId] = useState("");
+    const [boardMode, setBoardMode] = useState<'data' | 'link'>('data');
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const boardId = jiraBoardDataStore.getBoardId();
 
-    // Загрузка данных из Jira
     useEffect(() => {
         if (!showSettings) return;
 
@@ -166,16 +184,31 @@ export const Settings: FC = () => {
                 }
 
                 const data = await jiraBoardDataStore.getFreshBoardInfo();
-                if (data && data.value && data.value.type !== 'link') {
-                    setFormData(data.value);
+                if (data) {
+                    if (data.type === 'link') {
+                        setBoardMode('link');
+                        setLinkedBoardId(data.linkedBoardId);
+                        setFormData(getFormDataInitialState());
+                    } else {
+                        setBoardMode('data');
+                        setFormData(data);
+                    }
                 } else {
-                    // Если данных нет, используем значения по умолчанию
-                    setFormData(initFormData());
+                    setBoardMode('data');
+                    setFormData({
+                        ...initFormData(),
+                        issues: {},
+                        type: 'data'
+                    });
                 }
             } catch (error) {
                 console.error("Ошибка загрузки настроек:", error);
-                // В случае ошибки используем значения по умолчанию
-                setFormData(initFormData());
+                setBoardMode('data');
+                setFormData({
+                    ...initFormData(),
+                    issues: {},
+                    type: 'data'
+                });
             } finally {
                 setIsLoading(false);
             }
@@ -203,11 +236,11 @@ export const Settings: FC = () => {
         setShowSettings(false);
     };
 
-    const errors = useMemo(() => validateFormData(formData), [formData]);
+    const errors = useMemo(() => validateFormData(formData, boardMode, linkedBoardId), [formData, boardMode, linkedBoardId]);
     const isSaveButtonDisabled = Object.keys(errors).length > 0 || isSaving;
 
     const handleSave = async () => {
-        const currentErrors = validateFormData(formData);
+        const currentErrors = validateFormData(formData, boardMode, linkedBoardId);
         if (Object.keys(currentErrors).length > 0) return;
 
         setIsSaving(true);
@@ -216,7 +249,14 @@ export const Settings: FC = () => {
                 throw new Error("Не удалось получить boardId");
             }
 
-            await jiraBoardDataStore.modifyBoardDataAndSave(formData);
+            if (boardMode === 'link') {
+                await jiraBoardDataStore.modifyBoardLinkAndSave({
+                    type: 'link',
+                    linkedBoardId: linkedBoardId.trim()
+                });
+            } else {
+                await jiraBoardDataStore.modifyBoardDataAndSave(formData);
+            }
         } catch (error) {
             console.error("Ошибка сохранения настроек:", error);
             alert("Ошибка при сохранении настроек");
@@ -240,7 +280,22 @@ export const Settings: FC = () => {
         });
     };
 
+    const handleBoardModeChange = (mode: 'data' | 'link') => {
+        if (mode === boardMode) return;
+
+        if (mode === 'link') {
+            setBoardMode('link');
+        } else {
+            setBoardMode('data');
+        }
+    };
+
+    const handleLinkedBoardIdChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setLinkedBoardId(e.target.value);
+    };
+
     const handleCategoryChange = (index: number, field: CategoryField, value: string) => {
+        if (boardMode === 'link') return;
         const updatedCategories = [...formData.impactCategories];
 
         if (field === 'name' || field === 'description') {
@@ -285,6 +340,7 @@ export const Settings: FC = () => {
     };
 
     const handleConfidenceChange = (index: number, field: 'name' | 'value', value: string) => {
+        if (boardMode === 'link') return;
         const updatedConfidences = [...formData.confidences];
         if (field === 'name') {
             updatedConfidences[index] = {
@@ -305,6 +361,7 @@ export const Settings: FC = () => {
     };
 
     const addCategory = () => {
+        if (boardMode === 'link') return;
         setFormData({
             ...formData,
             impactCategories: [
@@ -315,6 +372,7 @@ export const Settings: FC = () => {
     };
 
     const addConfidence = () => {
+        if (boardMode === 'link') return;
         setFormData({
             ...formData,
             confidences: [
@@ -325,6 +383,7 @@ export const Settings: FC = () => {
     };
 
     const removeCategory = (index: number) => {
+        if (boardMode === 'link') return;
         if (formData.impactCategories.length <= 1) return;
         const updatedCategories = [...formData.impactCategories];
         updatedCategories.splice(index, 1);
@@ -335,6 +394,7 @@ export const Settings: FC = () => {
     };
 
     const removeConfidence = (index: number) => {
+        if (boardMode === 'link') return;
         if (formData.confidences.length <= 1) return;
         const updatedConfidences = [...formData.confidences];
         updatedConfidences.splice(index, 1);
@@ -360,183 +420,226 @@ export const Settings: FC = () => {
                 <p>Загрузка данных...</p>
             ) : (
                 <div className="jira-rice-farm-settings-form">
-                    {/* Делитель для Reach */}
-                    <div
-                        className={`jira-rice-farm-settings-form-group ${errors.reachDivider ? 'jira-rice-farm-settings-error' : ''}`}>
-                        <label htmlFor="reachDivider">Делитель для Reach</label>
-                        <input
-                            id="reachDivider"
-                            type="number"
-                            value={formData.reachDivider}
-                            onChange={handleReachDividerChange}
-                            min="1"
-                            max="1000000"
-                        />
-                        {errors.reachDivider &&
-                            <span className="jira-rice-farm-settings-error-message">{errors.reachDivider}</span>}
+                    {/* Переключатель режимов */}
+                    <div className="jira-rice-farm-settings-form-group">
+                        <label>Режим доски</label>
+                        <div className="jira-rice-farm-settings-mode-toggle">
+                            <button
+                                type="button"
+                                className={`jira-rice-farm-settings-mode-button ${boardMode === 'data' ? 'jira-rice-farm-settings-mode-button-active' : ''}`}
+                                onClick={() => handleBoardModeChange('data')}
+                            >
+                                Данные
+                            </button>
+                            <button
+                                type="button"
+                                className={`jira-rice-farm-settings-mode-button ${boardMode === 'link' ? 'jira-rice-farm-settings-mode-button-active' : ''}`}
+                                onClick={() => handleBoardModeChange('link')}
+                            >
+                                Ссылка
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Блок категорий Impact */}
-                    <div className="jira-rice-farm-settings-form-group">
-                        <h2>Категории Impact</h2>
-                        {formData.impactCategories?.map((category, index) => (
-                            <div key={index} className="jira-rice-farm-settings-category-block">
-                                <div
-                                    className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.name`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                    <label htmlFor={`category-name-${index}`}>Имя категории</label>
-                                    <input
-                                        id={`category-name-${index}`}
-                                        type="text"
-                                        value={category.name}
-                                        onChange={(e) => handleCategoryChange(index, 'name', e.target.value)}
-                                    />
-                                    {errors[`impactCategories.${index}.name`] && (
-                                        <span
-                                            className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.name`]}</span>
-                                    )}
-                                </div>
+                    {boardMode === 'link' ? (
+                        <div
+                            className={`jira-rice-farm-settings-form-group ${errors.linkedBoardId ? 'jira-rice-farm-settings-error' : ''}`}>
+                            <label htmlFor="linkedBoardId">ID связанной доски</label>
+                            <input
+                                id="linkedBoardId"
+                                type="text"
+                                value={linkedBoardId}
+                                onChange={handleLinkedBoardIdChange}
+                                placeholder="Введите ID доски"
+                            />
+                            {errors.linkedBoardId &&
+                                <span className="jira-rice-farm-settings-error-message">{errors.linkedBoardId}</span>}
+                        </div>
+                    ) : (<></>)}
 
-                                <div
-                                    className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.description`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                    <label htmlFor={`category-description-${index}`}>Описание категории</label>
-                                    <textarea
-                                        id={`category-description-${index}`}
-                                        value={category.description}
-                                        onChange={(e) => handleCategoryChange(index, 'description', e.target.value)}
-                                    />
-                                    {errors[`impactCategories.${index}.description`] && (
-                                        <span
-                                            className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.description`]}</span>
-                                    )}
-                                </div>
+                    {boardMode === 'data' && (
+                        <>
+                            {/* Делитель для Reach */}
+                            <div
+                                className={`jira-rice-farm-settings-form-group ${errors.reachDivider ? 'jira-rice-farm-settings-error' : ''}`}>
+                                <label htmlFor="reachDivider">Делитель для Reach</label>
+                                <input
+                                    id="reachDivider"
+                                    type="number"
+                                    value={formData.reachDivider}
+                                    onChange={handleReachDividerChange}
+                                    min="1"
+                                    max="1000000"
+                                />
+                                {errors.reachDivider &&
+                                    <span
+                                        className="jira-rice-farm-settings-error-message">{errors.reachDivider}</span>}
+                            </div>
 
-                                <h3>Уровни</h3>
-                                {impactLevelKeys?.map((levelKey) => (
-                                    <div key={levelKey} className="jira-rice-farm-settings-level-block">
+                            {/* Блок категорий Impact */}
+                            <div className="jira-rice-farm-settings-form-group">
+                                <h2>Категории Impact</h2>
+                                {formData.impactCategories?.map((category, index) => (
+                                    <div key={index} className="jira-rice-farm-settings-category-block">
                                         <div
-                                            className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.names.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                            <label htmlFor={`category-name-level-${index}-${levelKey}`}>
-                                                {levelKey} - Имя
-                                            </label>
+                                            className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.name`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                            <label htmlFor={`category-name-${index}`}>Имя категории</label>
                                             <input
-                                                id={`category-name-level-${index}-${levelKey}`}
+                                                id={`category-name-${index}`}
                                                 type="text"
-                                                value={category.names[levelKey]}
-                                                onChange={(e) => handleCategoryChange(index, `names.${levelKey}`, e.target.value)}
+                                                value={category.name}
+                                                onChange={(e) => handleCategoryChange(index, 'name', e.target.value)}
                                             />
-                                            {errors[`impactCategories.${index}.names.${levelKey}`] && (
+                                            {errors[`impactCategories.${index}.name`] && (
                                                 <span
-                                                    className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.names.${levelKey}`]}</span>
+                                                    className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.name`]}</span>
                                             )}
                                         </div>
 
                                         <div
-                                            className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.descriptions.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                            <label htmlFor={`category-description-level-${index}-${levelKey}`}>
-                                                {levelKey} - Описание
-                                            </label>
-                                            <input
-                                                id={`category-description-level-${index}-${levelKey}`}
-                                                type="text"
-                                                value={category.descriptions[levelKey]}
-                                                onChange={(e) => handleCategoryChange(index, `descriptions.${levelKey}`, e.target.value)}
+                                            className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.description`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                            <label htmlFor={`category-description-${index}`}>Описание категории</label>
+                                            <textarea
+                                                id={`category-description-${index}`}
+                                                value={category.description}
+                                                onChange={(e) => handleCategoryChange(index, 'description', e.target.value)}
                                             />
-                                            {errors[`impactCategories.${index}.descriptions.${levelKey}`] && (
+                                            {errors[`impactCategories.${index}.description`] && (
                                                 <span
-                                                    className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.descriptions.${levelKey}`]}</span>
+                                                    className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.description`]}</span>
+                                            )}
+                                        </div>
+
+                                        <h3>Уровни</h3>
+                                        {impactLevelKeys?.map((levelKey) => (
+                                            <div key={levelKey} className="jira-rice-farm-settings-level-block">
+                                                <div
+                                                    className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.names.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                                    <label htmlFor={`category-name-level-${index}-${levelKey}`}>
+                                                        {levelKey} - Имя
+                                                    </label>
+                                                    <input
+                                                        id={`category-name-level-${index}-${levelKey}`}
+                                                        type="text"
+                                                        value={category.names[levelKey]}
+                                                        onChange={(e) => handleCategoryChange(index, `names.${levelKey}`, e.target.value)}
+                                                    />
+                                                    {errors[`impactCategories.${index}.names.${levelKey}`] && (
+                                                        <span
+                                                            className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.names.${levelKey}`]}</span>
+                                                    )}
+                                                </div>
+
+                                                <div
+                                                    className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.descriptions.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                                    <label htmlFor={`category-description-level-${index}-${levelKey}`}>
+                                                        {levelKey} - Описание
+                                                    </label>
+                                                    <input
+                                                        id={`category-description-level-${index}-${levelKey}`}
+                                                        type="text"
+                                                        value={category.descriptions[levelKey]}
+                                                        onChange={(e) => handleCategoryChange(index, `descriptions.${levelKey}`, e.target.value)}
+                                                    />
+                                                    {errors[`impactCategories.${index}.descriptions.${levelKey}`] && (
+                                                        <span
+                                                            className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.descriptions.${levelKey}`]}</span>
+                                                    )}
+                                                </div>
+
+                                                <div
+                                                    className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.values.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                                    <label htmlFor={`category-value-level-${index}-${levelKey}`}>
+                                                        {levelKey} - Значение
+                                                    </label>
+                                                    <input
+                                                        id={`category-value-level-${index}-${levelKey}`}
+                                                        type="number"
+                                                        value={category.values[levelKey]}
+                                                        onChange={(e) => handleCategoryChange(index, `values.${levelKey}`, e.target.value)}
+                                                        min="0"
+                                                        max="100"
+                                                    />
+                                                    {errors[`impactCategories.${index}.values.${levelKey}`] && (
+                                                        <span
+                                                            className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.values.${levelKey}`]}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {formData.impactCategories.length > 1 && (
+                                            <button type="button" onClick={() => removeCategory(index)}>Удалить
+                                                категорию</button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button type="button" onClick={addCategory}>Добавить категорию</button>
+                            </div>
+
+                            {/* Массив confidences */}
+                            <div className="jira-rice-farm-settings-form-group">
+                                <h2>Уверенности (Confidences)</h2>
+                                {formData.confidences?.map((confidence, index) => (
+                                    <div key={index} className="jira-rice-farm-settings-confidence-block">
+                                        <div
+                                            className={`jira-rice-farm-settings-form-group ${errors[`confidences.${index}.name`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                            <label htmlFor={`confidence-name-${index}`}>Имя уверенности</label>
+                                            <input
+                                                id={`confidence-name-${index}`}
+                                                type="text"
+                                                value={confidence.name}
+                                                onChange={(e) => handleConfidenceChange(index, 'name', e.target.value)}
+                                            />
+                                            {errors[`confidences.${index}.name`] && (
+                                                <span
+                                                    className="jira-rice-farm-settings-error-message">{errors[`confidences.${index}.name`]}</span>
                                             )}
                                         </div>
 
                                         <div
-                                            className={`jira-rice-farm-settings-form-group ${errors[`impactCategories.${index}.values.${levelKey}`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                            <label htmlFor={`category-value-level-${index}-${levelKey}`}>
-                                                {levelKey} - Значение
-                                            </label>
+                                            className={`jira-rice-farm-settings-form-group ${errors[`confidences.${index}.value`] ? 'jira-rice-farm-settings-error' : ''}`}>
+                                            <label htmlFor={`confidence-value-${index}`}>Значение уверенности</label>
                                             <input
-                                                id={`category-value-level-${index}-${levelKey}`}
+                                                id={`confidence-value-${index}`}
                                                 type="number"
-                                                value={category.values[levelKey]}
-                                                onChange={(e) => handleCategoryChange(index, `values.${levelKey}`, e.target.value)}
+                                                value={confidence.value}
+                                                onChange={(e) => handleConfidenceChange(index, 'value', e.target.value)}
                                                 min="0"
                                                 max="100"
                                             />
-                                            {errors[`impactCategories.${index}.values.${levelKey}`] && (
+                                            {errors[`confidences.${index}.value`] && (
                                                 <span
-                                                    className="jira-rice-farm-settings-error-message">{errors[`impactCategories.${index}.values.${levelKey}`]}</span>
+                                                    className="jira-rice-farm-settings-error-message">{errors[`confidences.${index}.value`]}</span>
                                             )}
                                         </div>
+
+                                        {formData.confidences.length > 1 && (
+                                            <button type="button" onClick={() => removeConfidence(index)}>Удалить
+                                                уверенность</button>
+                                        )}
                                     </div>
                                 ))}
+                                <button type="button" onClick={addConfidence}>Добавить уверенность</button>
+                            </div>
 
-                                {formData.impactCategories.length > 1 && (
-                                    <button type="button" onClick={() => removeCategory(index)}>Удалить
-                                        категорию</button>
+                            {/* Описание для поля effort */}
+                            <div
+                                className={`jira-rice-farm-settings-form-group ${errors.effortDescription ? 'jira-rice-farm-settings-error' : ''}`}>
+                                <label htmlFor="effortDescription">Описание для поля effort</label>
+                                <input
+                                    type="text"
+                                    id="effortDescription"
+                                    value={formData.effortDescription}
+                                    onChange={handleEffortDescriptionChange}
+                                />
+                                {errors.effortDescription && (
+                                    <span
+                                        className="jira-rice-farm-settings-error-message">{errors.effortDescription}</span>
                                 )}
                             </div>
-                        ))}
-                        <button type="button" onClick={addCategory}>Добавить категорию</button>
-                    </div>
-
-                    {/* Массив confidences */}
-                    <div className="jira-rice-farm-settings-form-group">
-                        <h2>Уверенности (Confidences)</h2>
-                        {formData.confidences?.map((confidence, index) => (
-                            <div key={index} className="jira-rice-farm-settings-confidence-block">
-                                <div
-                                    className={`jira-rice-farm-settings-form-group ${errors[`confidences.${index}.name`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                    <label htmlFor={`confidence-name-${index}`}>Имя уверенности</label>
-                                    <input
-                                        id={`confidence-name-${index}`}
-                                        type="text"
-                                        value={confidence.name}
-                                        onChange={(e) => handleConfidenceChange(index, 'name', e.target.value)}
-                                    />
-                                    {errors[`confidences.${index}.name`] && (
-                                        <span
-                                            className="jira-rice-farm-settings-error-message">{errors[`confidences.${index}.name`]}</span>
-                                    )}
-                                </div>
-
-                                <div
-                                    className={`jira-rice-farm-settings-form-group ${errors[`confidences.${index}.value`] ? 'jira-rice-farm-settings-error' : ''}`}>
-                                    <label htmlFor={`confidence-value-${index}`}>Значение уверенности</label>
-                                    <input
-                                        id={`confidence-value-${index}`}
-                                        type="number"
-                                        value={confidence.value}
-                                        onChange={(e) => handleConfidenceChange(index, 'value', e.target.value)}
-                                        min="0"
-                                        max="100"
-                                    />
-                                    {errors[`confidences.${index}.value`] && (
-                                        <span
-                                            className="jira-rice-farm-settings-error-message">{errors[`confidences.${index}.value`]}</span>
-                                    )}
-                                </div>
-
-                                {formData.confidences.length > 1 && (
-                                    <button type="button" onClick={() => removeConfidence(index)}>Удалить
-                                        уверенность</button>
-                                )}
-                            </div>
-                        ))}
-                        <button type="button" onClick={addConfidence}>Добавить уверенность</button>
-                    </div>
-
-                    {/* Описание для поля effort */}
-                    <div
-                        className={`jira-rice-farm-settings-form-group ${errors.effortDescription ? 'jira-rice-farm-settings-error' : ''}`}>
-                        <label htmlFor="effortDescription">Описание для поля effort</label>
-                        <input
-                            type="text"
-                            id="effortDescription"
-                            value={formData.effortDescription}
-                            onChange={handleEffortDescriptionChange}
-                        />
-                        {errors.effortDescription && (
-                            <span className="jira-rice-farm-settings-error-message">{errors.effortDescription}</span>
-                        )}
-                    </div>
+                        </>
+                    )}
 
                     {/* Кнопки */}
                     <div className="jira-rice-farm-settings-form-buttons">

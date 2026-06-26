@@ -199,3 +199,38 @@
     width: 100%;
     max-width: 500px;
 }
+
+.jira-rice-farm-settings-mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    overflow: hidden;
+    width: fit-content;
+}
+
+.jira-rice-farm-settings-mode-button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    border-right: 1px solid #dcdcdc;
+}
+
+.jira-rice-farm-settings-mode-button:last-child {
+    border-right: none;
+}
+
+.jira-rice-farm-settings-mode-button-active {
+    background-color: #3498db;
+    color: white;
+}
+
+.jira-rice-farm-settings-mode-button:hover:not(.jira-rice-farm-settings-mode-button-active) {
+    background-color: #d5dbdb;
+}

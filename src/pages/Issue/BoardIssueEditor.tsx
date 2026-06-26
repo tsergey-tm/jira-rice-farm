@@ -63,8 +63,7 @@ export const BoardIssueEditor: FC<BoardIssueEditorProps> = observer(({issueKey, 
                     throw new Error("Не удалось получить boardId");
                 }
 
-                const bdi = await jiraBoardDataStore.getFreshBoardInfo();
-                const bd = bdi?.value as JRFBoardDataWithIssues;
+                const bd = await jiraBoardDataStore.getFreshBoardInfo() as JRFBoardDataWithIssues;
                 const data = (bd?.issues) ? bd?.issues[issueKey] : undefined;
                 setFormData(ensureImpactValues(data ?? createDefaultIssueData()));
             } catch (error) {
